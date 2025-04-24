@@ -1,0 +1,58 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\linespread{1.2}
+\usepackage{babel}
+\usepackage{amsthm, bm}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{comment}
+\usepackage{enumerate}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{geometry}
+\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=2cm,right=2cm}
+\usepackage{caption}
+\usepackage[version=4]{mhchem}
+\usepackage{stmaryrd}
+\usepackage{hyperref}
+\usepackage{float}
+\hypersetup{colorlinks=true, linkcolor=blue, filecolor=magenta, urlcolor=cyan,}
+\urlstyle{same}
+\usepackage{bbold}
+
+\title{Timeserie Econometrics 3 - Problem Set 1}
+\author{Alex Basov, Lorenzo Gorini}
+\date{\today}
+
+\begin{document}
+	
+	\maketitle
+	\vspace{1cm}
+	
+	\section*{Lab Exercises}
+	\subsection*{Question 1: VAR and impulse response functions (IRF)}
+		Refer to the 3 code files for the solution. Particularly, the 2 python files are for data cleaning and merging. The R file "model.R" is to reply to the following questions.
+		Here we only report the main results.
+		
+		\subsubsection*{Part 1}
+		\textit{Before fitting a trivariate VAR(p) for the 3-variable you just collect, briefly discuss if there are any transformations needed for the raw data}
+		
+		\subsubsection*{Part 2}
+		\textit{Estimate the model based on transformed series, show the estimates of the coefficients and of the covariance matrix you obtain}
+		
+		\subsubsection*{Part 3}
+		\textit{Use the estimates above as DGP to design a Monte Carlo experiment. Assess the accuracy of the AIC and BIC criterion in selecting the lag order of a VAR. Comment on the results you obtain.}
+		
+		\subsubsection*{Part 4}
+		\textit{Suppose now you want to identify and analyze the effects of a monetary policy shock:
+			\begin{itemize}
+				\item Comment on the ordering of the variables you would use to recursively identify the shock.
+				\item Obtain IRFs estimates from both VAR and Local Projections method (Jorda (2005,AER)). Comment on the differences you find
+			\end{itemize}
+		}
+\end{document}

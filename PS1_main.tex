@@ -1,0 +1,195 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\linespread{1.2}
+\usepackage{babel}
+\usepackage{amsthm, bm}
+\usepackage{graphicx}
+\usepackage{cancel}
+\usepackage{comment}
+\usepackage{enumerate}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{geometry}
+\geometry{a4paper,top=2.5cm,bottom=2.5cm,left=2cm,right=2cm}
+\usepackage{caption}
+\usepackage[version=4]{mhchem}
+\usepackage{stmaryrd}
+\usepackage{hyperref}
+\usepackage{float}
+\hypersetup{colorlinks=true, linkcolor=blue, filecolor=magenta, urlcolor=cyan,}
+\urlstyle{same}
+\usepackage{bbold}
+
+\title{Timeserie Econometrics 3 - Problem Set 1}
+\author{Alex Basov, Lorenzo Gorini}
+\date{\today}
+
+\begin{document}
+	
+	\maketitle
+	\vspace{1cm}
+	
+	\section*{Lab Exercises}
+	\subsection*{Question 1: VAR and impulse response functions (IRF)}
+		Refer to the 3 code files for the solution. Particularly, the 2 python files are for data cleaning and merging. The R file "model.R" is to reply to the following questions.
+		Here we only report the main results.
+		
+		\subsubsection*{Part 1}
+		\textit{Before fitting a trivariate VAR(p) for the 3-variable you just collect, briefly discuss if there are any transformations needed for the raw data}
+		We downloaded the 3 timeseries from UK Office of National Statistics:
+		\begin{enumerate}
+			\item "GDP at market prices: Current price: Seasonally adjusted £m" \\
+			Data from: https://www.ons.gov.uk/economy/grossdomesticproductgdp/timeseries/ybha/ukea \\
+			Source dataset ID: UKEA
+			\item Inflation (CPIH INDEX 00- ALL ITEMS 2015=100)
+			Data from:
+			https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/l522/mm23
+			Year base: 2015 -> set to 100
+		\end{enumerate}
+		Then, in order to merge them, we had to get the same periodicity for the data.
+		Particularly,  
+		
+		The GDP data contain 2 timeseries:
+		\begin{itemize}
+			\item One is observed on a yearly basis
+			\item One is observed on a quarterly basis
+		\end{itemize}
+		We want to keep only the quarterly data, which is in the format "YYYY QN" where N is
+		the quarter number (1, 2, 3, or 4).
+		
+		In CPI data, there are actually 3 timeseries:
+		\begin{itemize}
+			\item One is observed on a yearly basis
+			\item One is observed on a quarterly basis
+			\item One is observed on a monthly basis
+		\end{itemize}
+		We want to keep only the quarterly data.
+		
+		Finally, since we want to run a SVAR model with the three time series, we need to assume weak stationarity. For this reason, we transform the cpi and gdp
+		columns into inflation and gdp growth rate as the difference between the logarithm of the value of period t and the one of period t-1.
+		
+		\subsubsection*{Part 2}
+		\textit{Estimate the model based on transformed series, show the estimates of the coefficients and of the covariance matrix you obtain}
+		
+		\subsubsection*{Part 3}
+		\textit{Use the estimates above as DGP to design a Monte Carlo experiment. Assess the accuracy of the AIC and BIC criterion in selecting the lag order of a VAR. Comment on the results you obtain.}
+		
+		\subsubsection*{Part 4}
+		\textit{Suppose now you want to identify and analyze the effects of a monetary policy shock:
+			\begin{itemize}
+				\item Comment on the ordering of the variables you would use to recursively identify the shock.
+				\item Obtain IRFs estimates from both VAR and Local Projections method (Jorda (2005,AER)). Comment on the differences you find
+			\end{itemize}
+		}
+		\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+% Change the style of enumeration
+\renewcommand{\theenumi}{(\arabic{enumi})}
+\renewcommand{\labelenumi}{(\arabic{enumi})}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
+		
+		
+		\section*{Theory Exercise}
+		\subsubsection*{Question 4}
+		
+		
+		\begin{enumerate}
+			\item We know that $y_t$ is stationary, that is:
+			\begin{itemize}
+				\item $E[y_t] = \mu \quad \forall t$
+				\item $E[y_t^2] < \infty \quad \forall t$
+				\item $\gamma_j = E[(y_{t+j} - \mu)(y_t - \mu)] = E[(y_{h+j} - \mu)(y_{h} - \mu)] \quad \forall t, h, j$
+			\end{itemize}
+			\[
+			\lim\limits_{T\to\infty} \gamma_j = 0 \implies \lim\limits_{T\to\infty} \frac{1}{T} \sum\limits_{j=0}^{T} \gamma_j = 0 \quad \text{(using Hint)}
+			\]
+			Prove that:
+			\[
+			\bar{y}_T \xrightarrow{p} \mu \iff \lim\limits_{T\to\infty} P(|\bar{y}_T - \mu| > \epsilon) = 0 \quad \forall \epsilon > 0
+			\]
+			Recall Chebyshev's inequality:
+			\[
+			\forall \epsilon > 0, \quad P(|\bar{y}_T - \mu| \ge \epsilon) \le \frac{Var(\bar{y}_T)}{\epsilon^2}
+			\]
+			\[
+			Var(\bar{y}_T) = \frac{1}{T^2} Var\left(\sum\limits_{t=1}^{T} y_t\right) = \frac{1}{T^2} \left( \sum\limits_{t=1}^{T} Var(y_t) + 2 \sum\limits_{1 \le i < j \le T} Cov(y_i, y_j) \right) =
+			\]
+			
+			\[
+			= \frac{1}{T^2} \left( \sum\limits_{t=1}^{T} \gamma_0 + 2 \sum\limits_{t=1}^{T-1} \sum\limits_{j=1}^{T-t} \gamma_j \right) = \frac{1}{T^2} \left( T\gamma_0 + 2 \sum\limits_{j=0}^{T-1} (T-j)\gamma_j \right) =
+			\]
+			
+			\[
+			= \frac{1}{T^2} \left( T\gamma_0 + 2 T \sum\limits_{j=0}^{T-1} \gamma_j - 2 \sum\limits_{j=0}^{T-1} j\gamma_j \right) = \frac{\gamma_0}{T} + \frac{2}{T} \sum\limits_{j=0}^{T-1} \gamma_j - \frac{2}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j
+			\]
+			
+			Now let's take the limit of the Chebyshev's inequality:
+			\[
+			\lim\limits_{T\to\infty} P(|\bar{y}_T - \mu| \ge \epsilon) \le \lim\limits_{T\to\infty} \frac{Var(\bar{y}_T)}{\epsilon^2} = \]
+			\[= \frac{1}{\epsilon^2} \lim\limits_{T\to\infty} \left( \frac{\gamma_0}{T} + \frac{2}{T} \sum\limits_{j=0}^{T-1} \gamma_j - \frac{2}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j \right)
+			\]
+			
+			Let's consider the limit on the RHS:
+			\[
+			\lim\limits_{T\to\infty} \left( \frac{\gamma_0}{T} + \frac{2}{T} \sum\limits_{j=0}^{T-1} \gamma_j - \frac{2}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j \right) = 0 + 2 \lim\limits_{T\to\infty} \frac{1}{T} \sum\limits_{j=0}^{T-1} \gamma_j - 2 \lim\limits_{T\to\infty} \frac{1}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j
+			\]
+			Note that
+			\[
+			\sum\limits_{j=0}^{T-1} j\gamma_j = 0\gamma_0 + 1\gamma_1 + 2\gamma_2 + 3\gamma_3 + \cdots + (T-1)\gamma_{T-1} = 
+			\]
+			\[
+			= \sum\limits_{j=1}^{T-1} \gamma_j + \sum\limits_{j=2}^{T-1} \gamma_j + \sum\limits_{j=3}^{T-1} \gamma_j + \cdots + \sum\limits_{j=T-1}^{T-1} \gamma_j = \sum\limits_{j=1}^{T-1} \sum\limits_{i=j}^{T-1} \gamma_i
+			\]
+			
+			Then the limit becomes:
+			\[
+			\lim\limits_{T\to\infty} \left( 2 \lim\limits_{T\to\infty} \frac{1}{T} \sum\limits_{j=0}^{T-1} \gamma_j - 2 \lim\limits_{T\to\infty} \frac{1}{T^2} \sum\limits_{j=1}^{T-1} \sum\limits_{i=j}^{T-1} \gamma_i \right) =
+			= 2 \cdot 0 - 2 \sum\limits_{j=1}^{T-1} \frac{1}{T} \lim\limits_{T\to\infty}  \left( \frac{1}{T} \sum\limits_{i=j}^{T-1} \gamma_i \right) = 0
+			\]
+			\[
+			\implies \lim\limits_{T\to\infty} P(|\bar{y}_T - \mu| \ge \epsilon) = 0 \quad \forall \epsilon > 0
+			\]
+			\[
+			\implies \bar{y}_T \xrightarrow{p} \mu
+			\]
+			
+			\item Show that $Cov(y_1, \bar{y}_T) = \dfrac{1}{T} \sum\limits_{s=0}^{T-1} \gamma_s$;
+			\[
+			Cov(y_1, \bar{y}_T) = Cov\left(y_1, \frac{1}{T} \sum\limits_{t=1}^{T} y_t\right) = \frac{1}{T} \sum\limits_{t=1}^{T} Cov(y_1, y_t)
+			\]
+			\[
+			= \frac{1}{T} \sum\limits_{t=1}^{T} E[(y_1 - \mu)(y_t - \mu)] = \frac{1}{T} \sum\limits_{t=1}^{T} \gamma_{|t-1|} = \frac{1}{T} \left( \gamma_0 + \gamma_1 + \cdots + \gamma_{T-1} \right) = \frac{1}{T} \sum\limits_{s=0}^{T-1} \gamma_s
+			\]
+			
+			\item
+			Suppose that $\lim\limits_{T\to\infty} \sum\limits_{s=0}^{T} \gamma_s < \infty$, show that:
+			\[
+			\lim\limits_{T\to\infty} E[(\bar{y}_T - \mu)^2] = 0
+			\]
+			\[
+			Var(\bar{y}_T) = \frac{\gamma_0}{T} + \frac{2}{T} \sum\limits_{j=0}^{T-1} \gamma_j - \frac{2}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j
+			\]
+			From derivations in (1):
+			\[
+			\lim\limits_{T\to\infty} Var(\bar{y}_T) = \lim\limits_{T\to\infty} \frac{\gamma_0}{T} + 2 \lim\limits_{T\to\infty} \frac{1}{T} \sum\limits_{j=0}^{T-1} \gamma_j - 2 \lim\limits_{T\to\infty} \frac{1}{T^2} \sum\limits_{j=0}^{T-1} j\gamma_j
+			\]
+			Using the hint, we observe that:
+			\begin{itemize}
+				\item First term clearly converges to 0
+				\item In the second term: the sum converges to a constant while T in denominator goes to infinity. Hence the whole term converges to 0
+				\item The third term is effectively the expression in the hint divided by T that goes to infinity. The whole term converges to 0
+			\end{itemize}
+			\[
+			\lim\limits_{T\to\infty} Var(\bar{y}_T) = 0 + 2 \cdot 0 - 2 \cdot 0 = 0
+			\]
+			\[
+			\lim\limits_{T\to\infty} E[(\bar{y}_T - \mu)^2] = \lim\limits_{T\to\infty} Var(\bar{y}_T) = 0
+			\]
+		\end{enumerate}
+		
+\end{document}
