@@ -10,7 +10,7 @@ library(MASS) # For mvrnorm simulation
 data_path <- c(
   "/Users/lorenzogorini/Library/CloudStorage/",
   "OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/",
-  "Metrics 3-Time Series/uk-timeserie-metrics/merged_data_rates_stationary.csv"
+  "Metrics 3-Time Series/uk-timeserie-metrics/data/merged_data_rates.csv"
 )
 data <- read.csv(paste(data_path, collapse = ""), stringsAsFactors = FALSE)
 

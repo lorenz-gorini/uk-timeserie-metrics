@@ -10,6 +10,7 @@ This script performs the following steps:
 7. Compute and plot the Impulse Response Function (IRF) for the SVAR model.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
@@ -22,7 +23,7 @@ from statsmodels.tsa.vector_ar.svar_model import SVAR
 # =====================
 # The null hypothesis of the ADF test is that the time series has a unit root (i.e., it is non-stationary).
 # The alternative hypothesis is that the time series is stationary.
-merged_df = pd.read_csv("merged_data_rates.csv")
+merged_df = pd.read_csv("data/merged_data_rates.csv")
 
 
 def adf_test(series, series_name, include_critical_values=False):
@@ -41,7 +42,6 @@ def adf_test(series, series_name, include_critical_values=False):
 
 # Compute a second difference on GDP to achieve stationarity
 merged_df["Inflation_diff"] = merged_df["Inflation"].diff()
-merged_df["PolicyRate_diff"] = merged_df["WeightedPolicyRate"].diff()
 
 adf_test(merged_df["GDP_log_change"], f"GDP_log_change", include_critical_values=True)
 adf_test(merged_df["Inflation"], f"Inflation")
@@ -50,7 +50,16 @@ adf_test(merged_df["Inflation_diff"], f"Inflation")
 adf_test(merged_df["PolicyRate_diff"], f"WeightedPolicyRate")
 
 
-# Define the three timeframes
+# =====================
+# Check weak stationarity for three different timeframes
+# =====================
+# Define the three timeframes based on 2 breakpoints:
+# 1. October 1992 : ERM crisis --> 3rd quarter of 1992
+#       (UK left the European Exchange Rate Mechanism (ERM) due to “Black Wednesday”
+#       where they were fixing the exchange rate with steep interest‐rate hikes and
+#       heavy foreign‐exchange interventions and introduced inflation targeting)
+# 2. March 2020 : start of COVID-19 pandemic --> 1st quarter of 2020
+
 timeframes = [
     ("Before end of 1992", merged_df[merged_df["Year"] <= 1992]),
     (
@@ -71,8 +80,6 @@ for label, subset in timeframes:
 merged_df = merged_df.dropna(subset=["PolicyRate_diff", "Inflation_diff"])
 
 merged_df.to_csv("merged_data_rates_stationary.csv", index=False)
-
-import matplotlib.pyplot as plt
 
 series_list = [
     ("GDP_log_change", merged_df["GDP_log_change"]),
