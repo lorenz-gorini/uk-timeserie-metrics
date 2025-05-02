@@ -1,31 +1,65 @@
 #-----------------------#
 # 1. Load libraries and data
 #-----------------------#
+rm(list = ls()) # Clear workspace
 library(vars) # VAR estimation and IRF
 library(tseries) # For unit root tests (adf.test)
 library(MASS) # For mvrnorm simulation
-# Suppose your data is in a CSV file called "UK_data.csv"
-# and it contains: Quarter, GDP, PriceIndex, and PolicyRate.
-data <- read.csv("/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/PS1/merged_data_rates.csv", stringsAsFactors = FALSE)
 
-# Convert the Quarter column from "2022Q1" format to Date type by replacing the quarter with the corresponding start month.
-data$Quarter <- as.Date(paste0(
-  substr(data$Quarter, 1, 4), "-",
-  (as.numeric(substr(data$Quarter, 6, 6)) - 1) * 3 + 1, "-01"
-))
+# The dataset contains: Quarter, GDP, PriceIndex, and PolicyRate.
+data_path <- c(
+  "/Users/lorenzogorini/Library/CloudStorage/",
+  "OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/",
+  "Metrics 3-Time Series/uk-timeserie-metrics/merged_data_rates_stationary.csv"
+)
+data <- read.csv(paste(data_path, collapse = ""), stringsAsFactors = FALSE)
+
+# Convert the Quarter column from "2022Q1" format to Date type by replacing the
+# quarter with the corresponding start month.
+data$Quarter <- as.Date(paste0(substr(data$Quarter, 1, 4), "-", (as.numeric(
+  substr(data$Quarter, 6, 6)
+) - 1) * 3 + 1, "-01"))
 # Assuming quarterly frequency (adjust start accordingly)
 start_year <- as.numeric(format(min(data$Quarter), "%Y"))
 start_quarter <- as.numeric(format(min(data$Quarter), "%m")) / 3 + 1
 # Order data by Quarter
 data <- data[order(data$Quarter), ]
 
-# Create time series (assuming columns GDP, PriceIndex, PolicyRate)
-# For GDP, we will take logs and then differences, assuming nonstationarity.
-dgdp_ts <- ts(data$GDP_log_change, start = c(start_year, round(start_quarter)), frequency = 4)
-# For the price index (to compute inflation rate)
-inflation_ts <- ts(data$Inflation, start = c(start_year, round(start_quarter)), frequency = 4)
-# Policy rate (assume already stationary, but you may test it)
-policy_ts <- ts(data$WeightedPolicyRate, start = c(start_year, round(start_quarter)), frequency = 4)
+# Create time series
+# For GDP, we consider logs and differences, assuming nonstationarity.
+dgdp_ts <- ts(data$GDP_log_change,
+  start = c(start_year, round(start_quarter)),
+  frequency = 4
+)
+# For the inflation rate
+inflation_ts <- ts(data$Inflation,
+  start = c(start_year, round(start_quarter)),
+  frequency = 4
+)
+# Policy rate (assume already stationary)
+policy_ts <- ts(
+  data$PolicyRate,
+  start = c(start_year, round(start_quarter)),
+  frequency = 4
+)
+
+# Plot the three time series
+par(mfrow = c(3, 1))
+plot(dgdp_ts,
+  main = "GDP Growth Rate",
+  ylab = "Growth Rate",
+  xlab = "Time"
+)
+plot(inflation_ts,
+  main = "Inflation Rate",
+  ylab = "Inflation Rate",
+  xlab = "Time"
+)
+plot(policy_ts,
+  main = "Policy Rate",
+  ylab = "Policy Rate",
+  xlab = "Time"
+)
 
 #-----------------------#
 # 2. Transformation and Unit Root Tests
