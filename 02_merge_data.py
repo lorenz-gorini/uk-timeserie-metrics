@@ -10,7 +10,7 @@ import pandas as pd
 # Source dataset ID: UKEA
 
 # Load the GDP data
-gdp_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/PS1/gdp_series-filtered.csv"
+gdp_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/gdp_series-filtered.csv"
 gdp_df = pd.read_csv(gdp_path)
 
 gdp_df = gdp_df.iloc[7:].reset_index(drop=True)
@@ -50,7 +50,7 @@ if not failed_rows.empty:
 # Year base: 2015 -> set to 100
 
 # Load the CPI data
-cpi_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/PS1/inflation_CPIH INDEX 00- ALL ITEMS 2015=100_filtered.csv"
+cpi_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/inflation_CPIH INDEX 00- ALL ITEMS 2015=100_filtered.csv"
 cpi_df = pd.read_csv(cpi_path)
 cpi_df = cpi_df.iloc[7:].reset_index(drop=True)
 cpi_df.rename(
@@ -94,7 +94,7 @@ cpi_df["Quarter"] = pd.PeriodIndex(cpi_df["Quarter"].astype(str), freq="Q")
 cpi_df["CPI_index_2015"].isna().sum()
 # ------------------ POLICY DATA --------------------
 # Load the policy rate data
-policy_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/PS1/policy_rate_weighted_avg_quarter.csv"
+policy_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/policy_rate_weighted_avg_quarter.csv"
 policy_df = pd.read_csv(policy_path)
 # Drop Quarter and Year columns
 policy_df.drop(columns=["Quarter", "Year"], inplace=True)
