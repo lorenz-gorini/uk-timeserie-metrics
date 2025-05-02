@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 # %%
 # ------------------ GDP DATA --------------------
@@ -104,7 +104,9 @@ policy_df.rename(
     inplace=True,
 )
 # Convert the 'Quarter' column to a pandas PeriodIndex with quarterly frequency
-policy_df["Quarter"] = pd.PeriodIndex(policy_df["Quarter"].str.replace(" ", ""), freq="Q")
+policy_df["Quarter"] = pd.PeriodIndex(
+    policy_df["Quarter"].str.replace(" ", ""), freq="Q"
+)
 
 # %%
 
@@ -112,7 +114,9 @@ policy_df["Quarter"] = pd.PeriodIndex(policy_df["Quarter"].str.replace(" ", ""),
 merged_df = pd.merge(gdp_df, cpi_df, on="Quarter", how="outer")
 merged_df = pd.merge(merged_df, policy_df, on="Quarter", how="outer")
 
-merged_df["GDP_m"].isna().sum(), merged_df["CPI_index_2015"].isna().sum(), merged_df["WeightedPolicyRate"].isna().sum()
+merged_df["GDP_m"].isna().sum(), merged_df["CPI_index_2015"].isna().sum(), merged_df[
+    "WeightedPolicyRate"
+].isna().sum()
 # %%
 merged_df = merged_df[merged_df["Quarter"] >= pd.Period("1988Q1", freq="Q")]
 
@@ -121,21 +125,24 @@ merged_df["Year"] = merged_df["Quarter"].apply(lambda p: p.year)
 merged_df["Quarter_Num"] = merged_df["Quarter"].apply(lambda p: p.quarter)
 merged_df.to_csv("merged_data.csv", index=False)
 # %%
-# I want to run a SVAR model with the three time series, so I need 
+# I want to run a SVAR model with the three time series, so I need
 # to assume weak stationarity. For this reason, I transform the cpi and gdp
-# columns into inflation and gdp growth rate as the difference between the 
+# columns into inflation and gdp growth rate as the difference between the
 # logarithm of the value of period t and the one of period t-1
 merged_df = pd.read_csv("merged_data.csv")
 
+merged_df["Inflation"] = np.log(merged_df["CPI_index_2015"]) - np.log(
+    merged_df["CPI_index_2015"].shift(1)
+)
 
-merged_df["Inflation"] = np.log(merged_df["CPI_index_2015"]) - np.log(merged_df["CPI_index_2015"].shift(1))
-merged_df = merged_df.dropna(subset=["Inflation"])
+# Compute the first log difference of GDP
+merged_df["GDP_log_change"] = np.log(merged_df["GDP_m"]) - np.log(
+    merged_df["GDP_m"].shift(1)
+)
+merged_df[["GDP_log_change", "GDP_m"]]
 
-# TODO: CHECK WHAT HAPPENS TO THE FIRST TERM WHERE YOU DONT HAVE A PREVIOUS
-# PERIOD
-merged_df["GDP_log_change"] = np.log(merged_df["GDP_m"]) - np.log(merged_df["GDP_m"].shift(1))
-merged_df[["GDP_log_change","GDP_m"]]
-merged_df = merged_df.dropna(subset=["GDP_log_change"])
+# Drop rows with NaN values in the GDP_log_change and Inflation columns
+merged_df = merged_df.dropna(subset=["GDP_log_change", "Inflation"])
 
 # %%
 merged_df.to_csv("merged_data_rates.csv", index=False)
