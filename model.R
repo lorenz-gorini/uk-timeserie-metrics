@@ -36,9 +36,15 @@ inflation_ts <- ts(data$Inflation,
   start = c(start_year, round(start_quarter)),
   frequency = 4
 )
-# Policy rate (assume already stationary)
+# Policy rate (differenced)
 policy_ts <- ts(
-  data$PolicyRate,
+  data$PolicyRate_diff,
+  start = c(start_year, round(start_quarter)),
+  frequency = 4
+)
+# Policy rate
+policy_non_stationary_ts <- ts(
+  data$WeightedPolicyRate,
   start = c(start_year, round(start_quarter)),
   frequency = 4
 )
@@ -46,8 +52,8 @@ policy_ts <- ts(
 # Plot the three time series
 par(mfrow = c(3, 1))
 plot(dgdp_ts,
-  main = "GDP Growth Rate",
-  ylab = "Growth Rate",
+  main = "GDP Growth Rate (log)",
+  ylab = "GDP Growth Rate (log)",
   xlab = "Time"
 )
 plot(inflation_ts,
@@ -56,21 +62,46 @@ plot(inflation_ts,
   xlab = "Time"
 )
 plot(policy_ts,
+  main = "Policy Rate (differenced)",
+  ylab = "Policy Rate (differenced)",
+  xlab = "Time"
+)
+plot(policy_non_stationary_ts,
   main = "Policy Rate",
   ylab = "Policy Rate",
   xlab = "Time"
 )
 
 #-----------------------#
-# 2. Transformation and Unit Root Tests
+# 1.1 Unit Root Tests
 #-----------------------#
 # Check for unit roots; here using Augmented Dickey-Fuller Test
+# Null hypothesis: series has a unit root (non-stationary)
 adf_gdp <- adf.test(dgdp_ts, alternative = "stationary")
 adf_price <- adf.test(inflation_ts, alternative = "stationary")
+adf_policy_nonstat <- adf.test(policy_non_stationary_ts, alternative = "stationary")
 adf_policy <- adf.test(policy_ts, alternative = "stationary")
-print(adf_gdp) # p-value = 0.01
-print(adf_price) # p-value = 0.0303
-print(adf_policy) # p-value = 0.3083
+print(adf_gdp) # p-value < 0.01
+print(adf_price) # p-value = 0.036
+print(adf_policy_nonstat) # p-value = 0.237
+print(adf_policy) # p-value < 0.01
+
+#------------------------#
+# 1.2 Check for stationarity
+#------------------------#
+# Check for stationarity using the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test
+# Null hypothesis: series is stationary
+kpss_gdp <- kpss.test(dgdp_ts, null = "Level")
+kpss_price <- kpss.test(inflation_ts, null = "Level")
+kpss_policy <- kpss.test(policy_ts, null = "Level")
+kpss_policy_nonstat <- kpss.test(policy_non_stationary_ts, null = "Level")
+print(kpss_gdp) # p-value > 0.1
+print(kpss_price) # p-value > 0.091
+print(kpss_policy) # p-value > 0.1
+print(kpss_policy_nonstat) # p-value < 0.01
+# The ADF and KPSS tests indicates that the null hypothesis of a unit root is
+# rejected for all series, but the non-differenced policy rate, so we need to
+# consider its differenced version in order to proceed.
 
 # Combine the transformed series into one multivariate time series.
 var_data <- ts(cbind(dgdp_ts, inflation_ts, policy_ts), frequency = 4)
