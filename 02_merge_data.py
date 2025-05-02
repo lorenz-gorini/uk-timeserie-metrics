@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from statsmodels.tsa.stattools import adfuller
 
 # %%
 # ------------------ GDP DATA --------------------
@@ -141,8 +142,31 @@ merged_df["GDP_log_change"] = np.log(merged_df["GDP_m"]) - np.log(
 )
 merged_df[["GDP_log_change", "GDP_m"]]
 
-# Drop rows with NaN values in the GDP_log_change and Inflation columns
-merged_df = merged_df.dropna(subset=["GDP_log_change", "Inflation"])
+# After checking weak stationarity in analyze_stationarity.py, I found that policy rate
+# serie is also not stationary (ADFuller test p-value=0.116). I will take the first
+# difference of the policy rate series to achieve stationarity.
+print(
+    "ADF Test - p-value: "
+    f"{adfuller(merged_df.iloc[0:]["WeightedPolicyRate"].dropna())[1]}"
+)
+print(
+    "ADF Test - p-value: "
+    f"{adfuller(merged_df.iloc[1:]["WeightedPolicyRate"].dropna())[1]}"
+)
+"""
+Even though it is unexpected, dropping the first row of the dataframe seems to 
+significantly change the p-value of the ADF test (from 0.057 to 0.119).
+But since we need to take the first difference of the other series
+(so that the first row will contain NaNs), we will consider
+the p-value = 0.119 after dropping the first row. Therefore we will have to take the
+first difference of the policy rate series to achieve stationarity.
+"""
+merged_df["PolicyRate_diff"] = merged_df["WeightedPolicyRate"].diff()
+
+# Drop rows with NaN values due to differentiation in related columns
+initial_row_count = merged_df.shape[0]
+merged_df = merged_df.dropna(subset=["GDP_log_change", "Inflation", "PolicyRate_diff"])
+print(f"Number of rows dropped: {initial_row_count - merged_df.shape[0]}")
 
 # %%
 merged_df.to_csv("merged_data_rates.csv", index=False)
