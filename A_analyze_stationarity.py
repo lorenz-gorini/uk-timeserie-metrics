@@ -49,6 +49,26 @@ adf_test(merged_df["WeightedPolicyRate"], f"WeightedPolicyRate")
 adf_test(merged_df["Inflation_diff"], f"Inflation")
 adf_test(merged_df["PolicyRate_diff"], f"WeightedPolicyRate")
 
+# =====================
+# Plot ACF and PACF for "WeightedPolicyRate" and "PolicyRate_diff"
+# =====================
+fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+
+# WeightedPolicyRate plots:
+plot_acf(merged_df["WeightedPolicyRate"].dropna(), ax=axes[0, 0])
+axes[0, 0].set_title("ACF of PolicyRate")
+plot_pacf(merged_df["WeightedPolicyRate"].dropna(), ax=axes[0, 1])
+axes[0, 1].set_title("PACF of PolicyRate")
+
+# PolicyRate_diff plots:
+plot_acf(merged_df["PolicyRate_diff"].dropna(), ax=axes[1, 0])
+axes[1, 0].set_title("ACF of PolicyRate (differenced)")
+plot_pacf(merged_df["PolicyRate_diff"].dropna(), ax=axes[1, 1])
+axes[1, 1].set_title("PACF of PolicyRate (differenced)")
+
+plt.tight_layout()
+plt.savefig("images/acf_pacf_policy_rate.png")
+plt.show()
 
 # =====================
 # Check weak stationarity for three different timeframes

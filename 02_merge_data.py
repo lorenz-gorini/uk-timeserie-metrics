@@ -163,7 +163,7 @@ first difference of the policy rate series to achieve stationarity.
 """
 merged_df["PolicyRate_diff"] = merged_df["WeightedPolicyRate"].diff()
 
-# Drop rows with NaN values due to differentiation in related columns
+# Drop rows with NaN values due to differencing in related columns
 initial_row_count = merged_df.shape[0]
 merged_df = merged_df.dropna(subset=["GDP_log_change", "Inflation", "PolicyRate_diff"])
 print(f"Number of rows dropped: {initial_row_count - merged_df.shape[0]}")
