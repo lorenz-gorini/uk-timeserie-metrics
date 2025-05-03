@@ -283,6 +283,92 @@ table_bic <- table(selected_lags_bic)
 print(table_aic)
 print(table_bic)
 
+# -------------------------#
+# 4.1 Forecast Evaluation
+# -------------------------#
+# Forecast evaluation: Does AIC overfit? Compare its forecast performance to
+# BIC using rolling cross validation.
+
+# Use the multivariate time series (var_data) already created.
+# Focus on one-step-ahead forecasts for GDP_growth.
+n_total <- nrow(var_data)
+train_size <- round(n_total * 0.8) # use 80% for initial training
+n_forecasts <- n_total - train_size
+
+errors_aic <- numeric(n_forecasts)
+errors_bic <- numeric(n_forecasts)
+
+for (i in 1:n_forecasts) {
+  # Define the current training sample and the actual observation for forecasting.
+  train_data <- var_data[1:(train_size + i - 1), ]
+  test_obs <- var_data[train_size + i, "GDP_growth"]
+
+  # Select optimal lag order for training sample based on AIC and BIC.
+  sel <- VARselect(train_data, lag.max = 12, type = "const")
+  lag_aic <- sel$selection["AIC(n)"]
+  # Schwarz criterion (BIC)
+  lag_bic <- sel$selection["SC(n)"]
+
+  # Estimate VAR models with the chosen lag orders.
+  model_aic <- VAR(train_data, p = lag_aic, type = "const")
+  model_bic <- VAR(train_data, p = lag_bic, type = "const")
+
+  # Compute one-step ahead forecasts.
+  fcst_aic <- predict(model_aic, n.ahead = 1)$fcst$GDP_growth[1, "fcst"]
+  fcst_bic <- predict(model_bic, n.ahead = 1)$fcst$GDP_growth[1, "fcst"]
+
+  # Record forecast errors.
+  errors_aic[i] <- test_obs - fcst_aic
+  errors_bic[i] <- test_obs - fcst_bic
+}
+
+# Compute Root Mean Squared Error (RMSE) for each selection criterion.
+rmse_aic <- sqrt(mean(errors_aic^2))
+rmse_bic <- sqrt(mean(errors_bic^2))
+
+cat("Forecast RMSE using AIC-selected lag order:", rmse_aic, "\n")
+cat("Forecast RMSE using BIC-selected lag order:", rmse_bic, "\n")
+
+# Obtain forecast dates corresponding to one-step ahead forecasts.
+forecast_dates <- data$Quarter[(train_size + 1):n_total]
+
+# Plot forecast errors for visual comparison.
+plot(
+  forecast_dates,
+  errors_aic,
+  type = "b",
+  col = "red",
+  pch = 19,
+  xlab = "Forecast Date",
+  ylab = "Forecast Error",
+  main = "One-step Ahead Forecast Errors: AIC vs BIC"
+)
+lines(
+  forecast_dates,
+  errors_bic,
+  type = "b",
+  col = "blue",
+  pch = 17
+)
+legend(
+  "topright",
+  legend = c("AIC", "BIC"),
+  col = c("red", "blue"),
+  pch = c(19, 17)
+)
+
+# Summarize and output results in a LaTeX table.
+library(xtable)
+forecast_results <- data.frame(
+  Criterion = c("AIC", "BIC"),
+  RMSE = c(rmse_aic, rmse_bic)
+)
+latex_forecast <- xtable(forecast_results, caption = "One-step Ahead Forecast RMSE: AIC vs. BIC")
+print(latex_forecast, include.rownames = FALSE)
+# From the table and plot, we can see that the AIC-selected lag order has a
+# higher RMSE than the BIC-selected lag order in the forecast evaluation,
+# indicating that AIC may be overfitting.
+
 #-----------------------#
 # 4.1 LaTeX Table for Lag Selection Frequencies
 #-----------------------#
@@ -303,26 +389,34 @@ print(latex_table_aic, include.rownames = FALSE)
 
 # Print LaTeX code for the BIC table
 print(latex_table_bic, include.rownames = FALSE)
+# We see that the AIC overfitting is usually due to the fact that AIC and BIC
+# criteria select different lag orders for the VAR model. The AIC tends to
+# select a higher lag order than the BIC, which can lead to overfitting and
+# poorer out-of-sample forecast performance
 
 #-----------------------#
 # 5. Impulse Response Functions and Local Projections
 #-----------------------#
 # (a) Using the VAR model and Cholesky identification.
-# Ordering: GDP_growth, Inflation, PolicyRate
+# Ordering: GDP_growth, Inflation, PolicyRate_diff
 # Compute IRFs via the vars package.
-irf_var <- irf(var_model,
-  impulse = "PolicyRate", response = "GDP_growth",
-  n.ahead = 12, boot = TRUE, ci = 0.95
+irf_var <- irf(
+  var_model,
+  impulse = "PolicyRate_diff",
+  response = "GDP_growth",
+  n.ahead = 12,
+  boot = TRUE,
+  ci = 0.95
 )
 plot(irf_var)
 
 # (b) Local Projections Approach (Jordà, 2005)
 # For each horizon h, regress GDP_growth at time (t+h) on a shock at time t and
 # a set of control variables.
-# We assume that the shock is the residual from the VAR equation for PolicyRate
+# We assume that the shock is the residual from the VAR equation for PolicyRate_diff
 
 # Extract policy residuals from the VAR (shock series)
-policy_shock <- residuals(var_model)[, "PolicyRate"]
+policy_shock <- residuals(var_model)[, "PolicyRate_diff"]
 
 # Create a function to run a local projection regression for horizon h.
 library(lmtest)
@@ -352,33 +446,56 @@ horizon_IRF <- function(h, y, shock) {
 # Run local projections for horizons 0 to 12.
 horizons <- 0:12
 lp_irfs <- sapply(horizons, function(h) {
-  horizon_IRF(h,
-    y = var_data[, "GDP_growth"],
-    shock = policy_shock
-  )
+  horizon_IRF(h, y = var_data[, "GDP_growth"], shock = policy_shock)
 })
 
 # Plot the local projection IRFs
-plot(horizons, lp_irfs,
-  type = "b", col = "red", pch = 19,
-  xlab = "Horizon (quarters)", ylab = "IRF",
+plot(
+  horizons,
+  lp_irfs,
+  type = "b",
+  col = "red",
+  pch = 19,
+  xlab = "Horizon (quarters)",
+  ylab = "IRF",
   main = "Impulse Response: Local Projections vs. VAR"
 )
-lines(0:12, irf_var$irf$PolicyRate[, "GDP_growth"], type = "b", col = "blue", pch = 17)
-legend("topleft",
+lines(
+  0:12,
+  irf_var$irf$PolicyRate_diff[, "GDP_growth"],
+  type = "b",
+  col = "blue",
+  pch = 17
+)
+legend(
+  "topleft",
   legend = c("Local Projections", "VAR IRF"),
-  col = c("red", "blue"), pch = c(19, 17)
+  col = c("red", "blue"),
+  pch = c(19, 17)
 )
 # Save the plot as PNG
 png("irf_plot.png", width = 800, height = 600)
-plot(horizons, lp_irfs,
-  type = "b", col = "red", pch = 19,
-  xlab = "Horizon (quarters)", ylab = "IRF",
+plot(
+  horizons,
+  lp_irfs,
+  type = "b",
+  col = "red",
+  pch = 19,
+  xlab = "Horizon (quarters)",
+  ylab = "IRF",
   main = "Impulse Response: Local Projections vs. VAR"
 )
-lines(0:12, irf_var$irf$PolicyRate[, "GDP_growth"], type = "b", col = "blue", pch = 17)
-legend("topleft",
+lines(
+  0:12,
+  irf_var$irf$PolicyRate_diff[, "GDP_growth"],
+  type = "b",
+  col = "blue",
+  pch = 17
+)
+legend(
+  "topleft",
   legend = c("Local Projections", "VAR IRF"),
-  col = c("red", "blue"), pch = c(19, 17)
+  col = c("red", "blue"),
+  pch = c(19, 17)
 )
 dev.off()
