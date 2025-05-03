@@ -99,7 +99,7 @@ for label, subset in timeframes:
 # Drop rows with NaN values in the GDP_log_change and Inflation columns
 merged_df = merged_df.dropna(subset=["PolicyRate_diff", "Inflation_diff"])
 
-merged_df.to_csv("merged_data_rates_stationary.csv", index=False)
+merged_df.to_csv("data/merged_data_rates_stationary.csv", index=False)
 
 series_list = [
     ("GDP_log_change", merged_df["GDP_log_change"]),

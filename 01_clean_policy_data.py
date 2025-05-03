@@ -1,6 +1,6 @@
 import pandas as pd
 
-policy_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/PS1/policy_rate.xls"
+policy_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/raw_data/policy_rate.xls"
 
 # Read the Excel file.
 df = pd.read_excel(policy_path, sheet_name="HISTORICAL SINCE 1694")
@@ -108,7 +108,7 @@ print(df[["Year", "Month", "Day", "Date"]].head(10))
 
 # If you do not need the intermediate Month_Num, you can drop it
 df = df[["Year", "Month", "Day", "Date", "PolicyRate"]]
-df.to_csv("policy_rate_clean.csv", index=False)
+df.to_csv("data/policy_rate_clean.csv", index=False)
 
 # -------------------------------------------------
 # Step 5. Compute a weighted average of PolicyRate value for each quarter
@@ -117,9 +117,9 @@ df.to_csv("policy_rate_clean.csv", index=False)
 # row as the end date, then allocate the duration across the quarters that the period spans.
 
 # Convert Date column to datetime and sort the policy data
-df['Date'] = pd.to_datetime(df['Date'])
-df = df.sort_values('Date').reset_index(drop=True)
-df['end_date'] = df['Date'].shift(-1)
+df["Date"] = pd.to_datetime(df["Date"])
+df = df.sort_values("Date").reset_index(drop=True)
+df["end_date"] = df["Date"].shift(-1)
 
 # Create dictionaries to hold the weighted sum and weights for each quarter
 # The key will be a tuple: (year, quarter)
@@ -128,8 +128,8 @@ weights = {}
 
 # Iterate over each policy period and allocate the period duration to intersecting quarters
 for _, row in df.iterrows():
-    start = row['Date']
-    end = row['end_date']
+    start = row["Date"]
+    end = row["end_date"]
     if pd.isnull(end):
         continue  # Skip the last row if no following date is available
 
@@ -148,16 +148,21 @@ for _, row in df.iterrows():
 
             if delta_days > 0:
                 key = (year, quarter)
-                weighted_sums[key] = weighted_sums.get(key, 0) + row['PolicyRate'] * delta_days
+                weighted_sums[key] = (
+                    weighted_sums.get(key, 0) + row["PolicyRate"] * delta_days
+                )
                 weights[key] = weights.get(key, 0) + delta_days
 
 # Compute the weighted average PolicyRate for each quarter
 weighted_avg = {key: weighted_sums[key] / weights[key] for key in weighted_sums}
 
 # Convert the result to a DataFrame with columns: Year, Quarter, WeightedPolicyRate
-result_rows = [(year, quarter, weighted_avg[(year, quarter)])
-               for (year, quarter) in weighted_avg]
-weighted_avg_df = pd.DataFrame(result_rows, columns=['Year', 'Quarter', 'WeightedPolicyRate'])
+result_rows = [
+    (year, quarter, weighted_avg[(year, quarter)]) for (year, quarter) in weighted_avg
+]
+weighted_avg_df = pd.DataFrame(
+    result_rows, columns=["Year", "Quarter", "WeightedPolicyRate"]
+)
 
 # Create a new column with quarter format (e.g., 2022Q1)
 weighted_avg_df["Date"] = (
@@ -165,4 +170,4 @@ weighted_avg_df["Date"] = (
 )
 
 print(weighted_avg_df)
-weighted_avg_df.to_csv("policy_rate_weighted_avg_quarter.csv", index=False)
+weighted_avg_df.to_csv("data/policy_rate_weighted_avg_quarter.csv", index=False)

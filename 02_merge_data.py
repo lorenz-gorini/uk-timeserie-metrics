@@ -11,7 +11,7 @@ from statsmodels.tsa.stattools import adfuller
 # Source dataset ID: UKEA
 
 # Load the GDP data
-gdp_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/data/gdp_series-filtered.csv"
+gdp_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/raw_data/gdp_series-filtered.csv"
 gdp_df = pd.read_csv(gdp_path)
 
 gdp_df = gdp_df.iloc[7:].reset_index(drop=True)
@@ -51,7 +51,7 @@ if not failed_rows.empty:
 # Year base: 2015 -> set to 100
 
 # Load the CPI data
-cpi_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/data/inflation_CPIH INDEX 00- ALL ITEMS 2015=100_filtered.csv"
+cpi_path = "/Users/lorenzogorini/Library/CloudStorage/OneDrive-UniversitàCommercialeLuigiBocconi/PhD/Courses/Metrics/Metrics 3-Time Series/uk-timeserie-metrics/raw_data/inflation_CPIH INDEX 00- ALL ITEMS 2015=100_filtered.csv"
 cpi_df = pd.read_csv(cpi_path)
 cpi_df = cpi_df.iloc[7:].reset_index(drop=True)
 cpi_df.rename(
@@ -124,7 +124,7 @@ merged_df = merged_df[merged_df["Quarter"] >= pd.Period("1988Q1", freq="Q")]
 merged_df = merged_df.dropna()
 merged_df["Year"] = merged_df["Quarter"].apply(lambda p: p.year)
 merged_df["Quarter_Num"] = merged_df["Quarter"].apply(lambda p: p.quarter)
-merged_df.to_csv("merged_data.csv", index=False)
+merged_df.to_csv("data/merged_data.csv", index=False)
 # %%
 # I want to run a SVAR model with the three time series, so I need
 # to assume weak stationarity. For this reason, I transform the cpi and gdp
@@ -169,4 +169,4 @@ merged_df = merged_df.dropna(subset=["GDP_log_change", "Inflation", "PolicyRate_
 print(f"Number of rows dropped: {initial_row_count - merged_df.shape[0]}")
 
 # %%
-merged_df.to_csv("merged_data_rates.csv", index=False)
+merged_df.to_csv("data/merged_data_rates.csv", index=False)
