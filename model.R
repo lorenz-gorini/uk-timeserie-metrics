@@ -127,16 +127,57 @@ cov_matrix <- summary(var_model)$covres # Covariance matrix of residuals
 print(coef_matrices)
 print(cov_matrix)
 
+#-------------------------#
+# 3.2 Plot the Impulse Response Function
+#-------------------------#
+# Compute IRF functions via Cholesky identification for a PolicyRate shock
+# and plot the responses for all three series including 95% confidence intervals
+irf_res <- irf(
+  var_model,
+  impulse = "PolicyRate_diff",
+  response = c("GDP_growth", "Inflation", "PolicyRate_diff"),
+  n.ahead = 12,
+  boot = TRUE,
+  ci = 0.95
+)
+# Plot impulse responses with individual y-axis limits for each variable
+responses <- c("GDP_growth", "Inflation", "PolicyRate_diff")
+par(mfrow = c(length(responses), 1))
+for (resp in responses) {
+  irf_vals <- irf_res$irf$PolicyRate_diff[, resp]
+  lower_vals <- irf_res$Lower$PolicyRate_diff[, resp]
+  upper_vals <- irf_res$Upper$PolicyRate_diff[, resp]
+  ylim_range <- c(min(lower_vals), max(upper_vals))
+
+  plot(
+    irf_vals,
+    type = "l",
+    col = "black",
+    main = paste("IRF for", resp),
+    xlab = "Horizon (quarters)",
+    ylab = "Response",
+    ylim = ylim_range
+  )
+  lines(lower_vals, col = "blue", lty = 2)
+  lines(upper_vals, col = "blue", lty = 2)
+}
+par(mfrow = c(1, 1))
+
+
 #-----------------------#
 # 3.1 LaTeX Table for VAR Coefficients and Covariance Matrix
 #-----------------------#
 library(xtable)
 
-# Transpose the coefficient matrix to have 3 columns only (one for each equation)
+# Transpose the coefficient matrix to have 3 columns only (one for each
+# equation)
 coef_matrices_transposed <- t(coef_matrices)
 
 # Create and print LaTeX table for the transposed VAR coefficient matrices
-latex_coef <- xtable(coef_matrices_transposed, caption = "Estimated VAR Coefficients (Transposed)")
+latex_coef <- xtable(
+  coef_matrices_transposed,
+  caption = "Estimated VAR Coefficients (Transposed)", digits = 7
+)
 print(latex_coef, include.rownames = TRUE)
 
 # Create and print LaTeX table for the residual covariance matrix
