@@ -2,6 +2,7 @@
 *.zip
 *.Rproj
 D'ISIDORO_BENITEZ_V12.4.25.py
+.DS_Store
 
 images/
 data/
