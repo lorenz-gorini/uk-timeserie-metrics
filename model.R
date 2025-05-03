@@ -105,7 +105,7 @@ print(kpss_policy_nonstat) # p-value < 0.01
 
 # Combine the transformed series into one multivariate time series.
 var_data <- ts(cbind(dgdp_ts, inflation_ts, policy_ts), frequency = 4)
-colnames(var_data) <- c("GDP_growth", "Inflation", "PolicyRate")
+colnames(var_data) <- c("GDP_growth", "Inflation", "PolicyRate_diff")
 
 #-----------------------#
 # 3. Lag Order Selection and VAR Estimation
@@ -114,7 +114,7 @@ colnames(var_data) <- c("GDP_growth", "Inflation", "PolicyRate")
 lag_selection <- VARselect(var_data, lag.max = 8, type = "const")
 print(lag_selection$selection)
 
-# Suppose lag order p is selected (for example, p = 2 based on AIC/BIC)
+# Select the optimal lag order p based on AIC/BIC
 p_opt <- lag_selection$selection["AIC(n)"]
 
 # Estimate the VAR(p)
@@ -180,8 +180,12 @@ latex_coef <- xtable(
 )
 print(latex_coef, include.rownames = TRUE)
 
-# Create and print LaTeX table for the residual covariance matrix
-latex_cov <- xtable(cov_matrix, caption = "Residual Covariance Matrix")
+# Create and print LaTeX table for the residual covariance matrix with
+# increased precision (4 decimal places)
+latex_cov <- xtable(
+  cov_matrix,
+  caption = "Residual Covariance Matrix", digits = 7
+)
 print(latex_cov, include.rownames = TRUE)
 
 # Check the stability condition of the VAR model
@@ -202,14 +206,17 @@ print(normality_test)
 #-----------------------#
 # Use the estimated VAR as your Data Generating Process (DGP).
 n_obs <- nrow(var_data)
-n_rep <- 100 # number of Monte Carlo replications
+n_rep <- 1000 # number of Monte Carlo replications
 selected_lags_aic <- numeric(n_rep)
 selected_lags_bic <- numeric(n_rep)
 
 # Extract estimated coefficients and constant terms from your VAR
 # (We assume a constant VAR model here)
-const_vec <- sapply(var_model$varresult, function(x) coef(x)["const"])
-# Note: Coefficient extraction might differ if you have more complex model specifications.
+const_vec <- sapply(var_model$varresult, function(x) {
+  coef(x)["const"]
+})
+# Note: Coefficient extraction might differ if you have more complex model
+# specifications.
 
 # Function to simulate a VAR process using estimated parameters:
 simulate_VAR <- function(coefs, const, Sigma, n, p) {
@@ -217,7 +224,11 @@ simulate_VAR <- function(coefs, const, Sigma, n, p) {
   # Initialize with zeros (or you could use the initial observations from data)
   sim_data <- matrix(0, nrow = n + p, ncol = k)
   # Generate errors (innovations)
-  errors <- mvrnorm(n = n + p, mu = rep(0, k), Sigma = Sigma)
+  errors <- mvrnorm(
+    n = n + p,
+    mu = rep(0, k),
+    Sigma = Sigma
+  )
 
   for (t in (p + 1):(n + p)) {
     # Start with the constant term
@@ -232,7 +243,8 @@ simulate_VAR <- function(coefs, const, Sigma, n, p) {
 }
 
 # Prepare coefficient matrices for simulation.
-# Bcoef(var_model) returns a matrix organized by equation; reshape them into a list for each lag.
+# Bcoef(var_model) returns a matrix organized by equation; reshape them into a
+# list for each lag.
 coef_list <- list()
 for (lag in 1:p_opt) {
   coef_list[[lag]] <- sapply(var_model$varresult, function(x) {
@@ -244,7 +256,11 @@ for (lag in 1:p_opt) {
     # If a coefficient is missing or NA, set it to 0
     sapply(coef_name, function(nm) {
       coef_val <- coef(x)[nm]
-      if (is.na(coef_val)) 0 else coef_val
+      if (is.na(coef_val)) {
+        0
+      } else {
+        coef_val
+      }
     })
   })
   # Coerce to a matrix if needed (each column corresponds to an equation)
