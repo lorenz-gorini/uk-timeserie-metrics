@@ -53,12 +53,151 @@ policy_non_stationary_ts <- ts(
 )
 
 #------------------------#
-# 2. Check for structural breaks
+# 2.1 INFLATION: Identify possible structural breaks
 #------------------------#
+# Some possible structural breaks, especially for the policy_rate serie:
+# 1. October 1992 : ERM crisis --> 3rd quarter of 1992
+#   (UK left the European Exchange Rate Mechanism (ERM) due to “Black Wednesday”
+#   where they were fixing the exchange rate with steep interest‐rate hikes and
+#   heavy foreign‐exchange interventions and introduced inflation targeting)
+# 2. March 2020 : start of COVID-19 pandemic --> 1st quarter of 2020
+
 # Check for structural breaks using the Bai-Perron test
 bp_test <- breakpoints(inflation_ts ~ 1, h = 0.15)
 plot(bp_test)
 print(breakdates(bp_test)) # 1993.5 2019.5
+
+# 1. Zivot–Andrews test
+library(urca)
+za_test <- ur.za(inflation_ts, model = "both", lag = 4)
+print(summary(za_test))
+break_time <- time(inflation_ts)[za_test@bpoint]
+print(break_time) # 1991.5
+
+#------------------------#
+# 2.2 INFLATION: Test structural breaks
+#------------------------#
+library(strucchange)
+
+# Identify the observation index of the referendum quarter
+time_idx <- time(inflation_ts)
+break_pt <- which(time_idx == 2020 + (2 - 1) / 4)
+
+# Chow test for a break in mean (intercept) at that point
+chow_res <- sctest(inflation_ts ~ 1, type = "Chow", point = break_pt)
+
+print(chow_res) # p-value = 0.002
+
+# The Chow test indicates a significant break in the mean at the specified point
+
+#------------------------#
+# 2.3 INFLATION: Check if ARIMA model with break dummies is stationary
+#------------------------#
+# 2. Model with break dummies
+step_covid <- as.numeric(time_idx >= 2020 + (2 - 1) / 4)
+trend <- seq_along(inflation_ts)
+covid_trend <- pmax(0, trend - which(time_idx == 2020.25))
+
+library(forecast)
+fit_break <- Arima(inflation_ts,
+  order = c(1, 0, 0),
+  xreg = cbind(step_covid, covid_trend)
+)
+# 3. Check residual stationarity
+library(tseries)
+adf.test(residuals(fit_break), alternative = "stationary") # p-value < 0.01
+
+#------------------------#
+# 3.1 POLICY RATE: Identify possible structural breaks
+#------------------------#
+# Check for structural breaks in the policy rate series
+# 1. Bai-Perron test: check the break in the regression mean
+bp_test <- breakpoints(policy_non_stationary_ts ~ 1, h = 0.15)
+plot(bp_test)
+print(breakdates(bp_test)) # 1993.50 2001.25 2008.75 2019.25
+bp_test <- breakpoints(policy_non_stationary_ts ~ 1, h = 0.15, breaks = 2)
+print(breakdates(bp_test)) # 1993.50 2008.75
+
+# Test for structural breaks in the second moment (variance) of the non-differenced policy rate
+policy_sq <- policy_non_stationary_ts^2
+bp_variance <- breakpoints(policy_sq ~ 1, h = 0.15)
+plot(bp_variance, main = "Breakpoints in Variance of Policy Rate")
+print(breakdates(bp_variance)) # 1993.5 2008.5
+
+# 2. Zivot–Andrews test
+library(urca)
+za_test <- ur.za(policy_non_stationary_ts, model = "both", lag = 4)
+print(summary(za_test))
+break_time <- time(policy_non_stationary_ts)[za_test@bpoint]
+print(break_time) # 2008.5
+
+# The 2008 break coincides with the global financial crisis, when the MPC cut Bank Rate from 5.75% in mid-2007 to just 0.5% by March 2009—the lowest in the Bank's 300-year history—and introduced large-scale quantitative easing to restore stability
+# (https://commonslibrary.parliament.uk/why-have-interest-rates-been-raised-and-whats-the-impact/).
+
+# Since then, monetary policy has continued to follow the same inflation-targeting rule but has been supplemented by non-standard tools—most notably state-contingent forward guidance on rate paths (first announced in August 2013) and successive rounds of asset purchases when rates sat at the zero lower bound (https://obr.uk/box/forward-guidance-by-the-monetary-policy-committee/). During the COVID-19 recession in March 2020, the Bank again cut Bank Rate to 0.1%, expanded QE, and deployed the Term Funding Scheme for SMEs, yet there was no change to its core decision rule—it simply exercised its existing inflation-target mandate through discretionary MPC action and the same state-space of instruments
+
+#------------------------#
+# 3.2 POLICY RATE: Test structural breaks
+#------------------------#
+
+# Based on previous analysis, we consider the 1993 and 2008 structural breaks
+# and we check if dropping observations before 1993Q2 and after 2008Q3 could
+# make the not-differenced policy rate time serie stationary
+policy_nonstat_subset <- window(
+  policy_non_stationary_ts,
+  start = c(1993, 3), end = c(2008, 4)
+)
+adf_policy_subset <- adf.test(policy_nonstat_subset, alternative = "stationary")
+print(adf_policy_subset) # p-value = 0.908
+
+kpss_policy_nonstat_subset <- kpss.test(policy_nonstat_subset, null = "Level")
+print(kpss_policy_nonstat_subset) # p-value < 0.01
+
+# The ADF test indicates that, even in the smaller window avoiding the two
+# structural breaks, the time serie is not stationary, so we will use the
+# differenced policy rate in the VAR model
+
+#------------------------#
+# 3.3 POLICY RATE: Check if ARIMA model with break dummies is stationary
+#------------------------#
+# Create break dummy variables based on the time index of the policy series
+time_policy <- time(policy_non_stationary_ts)
+dummy_1993Q2 <- as.numeric(time_policy >= 1993 + (2 - 1) / 4)
+dummy_2008Q3 <- as.numeric(time_policy >= 2008 + (3 - 1) / 4)
+break_dummies <- cbind(dummy_1993Q2, dummy_2008Q3)
+
+# (1) Fit an ARIMA model on the non-differenced policy rate without any break dummies
+library(forecast)
+model_no_dummy <- auto.arima(policy_non_stationary_ts)
+summary(model_no_dummy)
+
+# (2) Fit an ARIMA model on the same series including the two break dummies
+model_with_dummy <- auto.arima(policy_non_stationary_ts, xreg = break_dummies)
+summary(model_with_dummy)
+
+# Compare the two models, here via AIC
+cat("AIC without break dummies:", AIC(model_no_dummy), "\n")
+cat("AIC with break dummies:", AIC(model_with_dummy), "\n")
+
+# Optionally, check the residuals for autocorrelation using the Ljung-Box test
+lb_no_dummy <- Box.test(residuals(model_no_dummy), lag = 20, type = "Ljung-Box")
+lb_with_dummy <- Box.test(residuals(model_with_dummy), lag = 20, type = "Ljung-Box")
+cat("Ljung-Box p-value (no dummies):", lb_no_dummy$p.value, "\n")
+cat("Ljung-Box p-value (with dummies):", lb_with_dummy$p.value, "\n")
+
+#  Check for stationarity of the residuals
+adf_residuals_no_dummy <- adf.test(residuals(model_no_dummy), alternative = "stationary")
+adf_residuals_with_dummy <- adf.test(residuals(model_with_dummy), alternative = "stationary")
+print(adf_residuals_no_dummy) # p-value < 0.01
+print(adf_residuals_with_dummy) # p-value < 0.01
+
+# The ADF test indicates that the residuals of both models are stationary, but
+# the model with break dummies has a lower AIC, suggesting that the break dummies
+# improve the model fit. The Ljung-Box test p-values indicate that the residuals
+# of both models are not significantly autocorrelated, but the model with break
+# dummies has a slightly higher p-value, suggesting that the inclusion of break
+# dummies may have improved the model fit by reducing autocorrelation in the
+# residuals.
 
 #-----------------------#
 # 3. Detrend and Stationarity Test for policy_non_stationary_ts
