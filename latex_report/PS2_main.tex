@@ -1,0 +1,319 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{tikz}
+\usepackage{array}
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage[main = english, russian]{babel}
+\usepackage[unicode]{hyperref}
+\usepackage{graphicx}
+\usepackage{pdfpages}
+\usepackage{bbm}
+\usepackage{lscape}
+\usepackage[margin=1in]{geometry}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{float}
+\newcommand{\bbR}{\mathbb R}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\bbN}{\mathbb N}
+\newcommand{\bbZ}{\mathbb Z}
+\newcommand{\bbF}{\mathbb F}
+\newcommand{\bbE}{\mathbb E}
+\pagestyle{fancy}
+\makeatletter 
+\fancyhead[L]{\footnotesize Università Bocconi, <<Econometrics 3>>}
+\fancyhead[R]{\normalsize \textbf{Alex Basov \& Lorenzo Gorini}}
+%\fancyfoot[L]{\footnotesize \@author}
+\fancyfoot[R]{\thepage}
+\fancyfoot[C]{}
+\renewcommand{\maketitle}{%
+	\noindent{\bfseries\scshape\large\@title\ \mdseries\upshape(\@date)}\par
+	%\noindent {\large\itshape\@author}
+	\vskip 1 ex}
+\makeatother
+\newenvironment{solution}[1]
+{\par\bigskip\noindent\textbf{Question #1.}\enskip\ignorespaces}
+{}
+\newcounter{solution}
+\newenvironment{asolution}{\par\bigskip\noindent\refstepcounter{solution}\textbf{Solution \thesolution.}\enskip\ignorespaces}{}
+\newtheorem{problem}{Problem}
+\renewcommand{\theenumi}{(\alph{enumi})}
+\renewcommand{\labelenumi}{(\alph{enumi})}
+%\renewcommand{\theenumi}{(\asbuk{enumi})}
+%\renewcommand{\labelenumi}{\asbuk{enumi})} 
+% Есть три стиля для окружений типа "теорема":
+% \theoremstyle{theorem}
+% \theoremstyle{definition}
+\theoremstyle{remark}
+% Отличаются шрифтами, используемыми для разных частей текста.
+\title{Problem set 2}
+%\author{Your name} % Впишите Ваше имя
+\date{\today} % Впишите дату
+\setlength{\parindent}{0pt}
+\sloppy
+
+%\renewcommand{\theenumi}{(\arabic{enumi})}
+%\renewcommand{\labelenumi}{(\arabic{enumi})}
+
+\usepackage{enumitem}
+
+\begin{document}
+	
+\onehalfspacing
+\maketitle
+\thispagestyle{fancy}
+
+
+\section*{Lab Exercises}
+\subsection*{Question 2: Rolling Forecast Evaluation (2-step-ahead forecasts)}
+    Our findings are summed up in the table below:
+     
+    \begin{table}[H]
+    \centering
+    \begin{tabular}{lrr}
+      \hline
+    Method & RMSE & p\_value (vs. RW) \\ 
+      \hline
+    RW & 0.00657 &  \\ 
+      AR\_Iter & 0.00603 & 0.26808 \\ 
+      AR\_Direct & 0.01103 &  \\ 
+       \hline
+    \end{tabular}
+    \caption{Root Mean Square Forecast Error (RMSE) and DM test p-value for each forecasting method} 
+    \label{tab:rmse}
+    \end{table}
+    Therefore, we find that AR\_direct significantly underperforms Random Walk model due to his completely different DGP that is used:
+    
+
+
+To sum up, the two forecasts will differ as:
+- Iterated forecasts: We use a one‑step‑ahead model repeatedly: you forecast \(y_{T+1}\), then plug that forecast back in to predict \(y_{T+2}\), and so on.  
+- Direct forecasts: estimate a separate model for each horizon \(h\); e.g.\ for \(h=2\) you regress \(y_{t+2}\) directly on past lags of \(y_t\).  
+The key trade‑off is that Iterated forecasts are asymptotically efficient if the one‑step model is correctly specified, but they can accumulate error when you roll forward. Direct forecasts avoid error propagation and can be more robust to misspecification at the cost of estimating many separate models.
+
+Particularly, for the Iterated (Recursive) Forecasts, we have:
+1. Fit a one‑step‑ahead model: (e.g.\ AR(\(p\))) on your training data.  \\
+2. Forecast: \( \hat y_{T+1} \).  \\
+3. Append: \( \hat y_{T+1} \) to the sample and forecast \( \hat y_{T+2} \) using the same AR(\(p\)) coefficients.  \\
+4. Repeat until you reach your desired horizon.  \\
+
+Defined more formally, if our AR(\(p\)) model is  
+ \(\displaystyle y_t = \phi_1 y_{t-1} + \cdots + \phi_p y_{t-p} + \varepsilon_t\),  \\
+ then  \\
+ \(\hat y_{T+2|T} = \phi_1 \hat y_{T+1|T} + \phi_2 y_T + \cdots + \phi_p y_{T+2-p}\).  
+
+On the other hand, the Direct Forecasts follows:  
+1. For each horizon \(h\), re‑estimate a model of the form : \\
+   \[
+     y_{t+h} = \alpha_0^{(h)} + \alpha_1^{(h)} y_t + \alpha_2^{(h)} y_{t-1} + \cdots + \alpha_p^{(h)} y_{t+1-p} + u_{t+h}^{(h)}.
+   \]  
+2. Predict: \(\hat y_{T+h}\) directly from that horizon‑\(h\) regression. \\
+So the big advantage is that there is no error accumulation between steps, but on the other hand, you must estimate a new model for each horizon (e.g.\ \(h=2\), \(h=3\), …), so each horizon‑specific regression uses fewer effective observations (reducing precision).
+
+Under an infinite information set and a correctly specified linear model, iterated and direct forecasts are theoretically identical.
+
+In our case AR\_iterated marginally improves RW model thanks to the richer dynamic structure but p-value=0.268 so the difference is not statistically significant.
+
+    On the other hand, empirical studies—both for advanced and emerging economies—find that inflation follows an integrated process with high persistence, making a random-walk model (ARIMA(0,1,0)) a surprisingly strong benchmark (see "As good as a random walk: Inflation forecasting in emerging market" (https://cepr.org/voxeu/columns/good-random-walk-inflation-forecasting-emerging-market-economies) and "Why Has U.S. Inflation Become Harder to Forecast?"(https://www.princeton.edu/~mwatson/papers/Stock\_Watson\_JMCB\_2007.pdf)).  The two studies show that when variables exhibit near-unit-root behavior, even well-specified AR(\(p\)) models struggle to add forecast value beyond simply carrying forward the last observed value.
+    
+\subsection*{Question 3: Nonstationary time series model and cointegration}
+    
+For some reasons, both pp.test and adf.test raise a warning saying "Warning message: In pp.test(policy\_ts) : p-value smaller than printed p-value" so we don't manage to get the proper p-value, but we know that it is lower than p<0.01 in all cases, confirming that the original time series are I(1), so that the differentiated ones are weakly stationary. So we get the following table:
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrr}
+  \hline
+Series & ADF\_Level & ADF\_Diff & PP\_Diff \\ 
+  \hline
+GDP & 0.990 & <0.010 & <0.010 \\ 
+  Inflation & 0.990 & <0.010 & <0.010 \\ 
+  Policy Rate & <0.010 & <0.010 & <0.010 \\ 
+   \hline
+\end{tabular}
+\caption{Unit Root Test P-Values for Time Series (levels and first differences)} 
+\label{tab:unit_root}
+\end{table}
+Thanks to this property, we can get VAR consistent estimator, which selects 5 as lag order based on AIC criterion.
+
+In the following table I also report the Johansen Trace Test Statistics and Critical Values:
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrr}
+  \hline
+ & 10pct & 5pct & 1pct \\ 
+  \hline
+  r $<$= 2 $|$ & 7.52000 & 9.24000 & 12.97000 \\ 
+  r $<$= 1 $|$ & 17.85000 & 19.96000 & 24.60000 \\ 
+  r = 0  $|$ & 32.00000 & 34.91000 & 41.07000 \\ 
+   \hline
+\end{tabular}
+\caption{Critical Values for Johansen Trace Test} 
+\label{tab:cval}
+\end{table}
+
+From the table above we see that for \(r\le2\): 12.08 > 9.24 (reject at 5\%) but 12.08 < 12.97 (fail to reject at 1\%). Therefore, at the 1\% level do not reject, and we can conclude \(r=2\) at 1\% significance.
+
+Based on the previous results, we estimate the VECM parameters, meanly we extract $\beta$ (cointegration vector) and $\alpha$ (adjustment coefficients) and we get the following tables:
+\begin{table}[H]
+\centering
+\begin{tabular}{rrr}
+  \hline
+ & GDP.l5 & INF.l5 \\ 
+  \hline
+GDP.l5 & 1.00000 & 1.00000 \\ 
+  INF.l5 & -0.81581 & 1.07109 \\ 
+  RATE.l5 & -0.00831 & 0.08863 \\ 
+  constant & -0.00596 & -0.01199 \\ 
+   \hline
+\end{tabular}
+\caption{Normalized Cointegrating Vectors} 
+\label{tab:beta_norm}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrr}
+  \hline
+ & GDP.l5 & INF.l5 \\ 
+  \hline
+GDP.d & -1.20008 & -0.10782 \\ 
+  INF.d & 0.12902 & -0.01132 \\ 
+  RATE.d & 9.13275 & -3.62844 \\ 
+   \hline
+\end{tabular}
+\caption{Adjustment Coefficients} 
+\label{tab:alpha_mat}
+\end{table}
+
+Finally we show the estimates of the OLS regression coefficients for each of the VECM equations:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{rrrr}
+  \hline
+ & GDP.d & INF.d & RATE.d \\ 
+  \hline
+ect1 & -1.30791 & 0.11771 & 5.50431 \\ 
+  ect2 & 0.86355 & -0.11738 & -11.33698 \\ 
+  GDP.dl1 & -1.24705 & 0.02738 & -0.14179 \\ 
+  INF.dl1 & 0.35431 & -0.52036 & 8.69085 \\ 
+  RATE.dl1 & 0.00272 & -0.00238 & -0.19261 \\ 
+  GDP.dl2 & -1.29629 & 0.06230 & 1.10433 \\ 
+  INF.dl2 & 0.73815 & -0.34464 & -10.54692 \\ 
+  RATE.dl2 & 0.00123 & 0.00077 & -0.43669 \\ 
+  GDP.dl3 & -1.19645 & 0.11361 & 1.83279 \\ 
+  INF.dl3 & 0.70647 & -0.46123 & -6.90044 \\ 
+  RATE.dl3 & 0.00524 & -0.00207 & -0.35647 \\ 
+  GDP.dl4 & -1.24656 & 0.10045 & 3.45810 \\ 
+  INF.dl4 & 0.51052 & 0.28844 & -8.04665 \\ 
+  RATE.dl4 & 0.00129 & -0.00096 & -0.46192 \\ 
+   \hline
+\end{tabular}
+\caption{Regression Coefficients for VECM Equations} 
+\label{tab:vecm_coef}
+\end{table}
+
+\subsection*{Question 4: Spectral Analysis}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{Spectral_Analysis}
+  \caption{Spectral Analysis of UK Economic Indicators}
+  \label{fig:spectral_analysis}
+\end{figure}
+The figure \ref{fig:spectral_analysis} shows the smoothed periodograms for the UK CPI, GDP, and policy rate series in both levels (left panels) and growth‐rate form (right panels). In levels, each series is dominated by very large spectral density at near‐zero frequencies—confirming the strong trending, nonstationary behavior of CPI, GDP, and interest rates. After converting to growth rates (log‐differences for CPI and GDP), the low‐frequency peak disappears and the spectra flatten out, revealing modest cyclical power around business‐cycle frequencies (roughly 0.2–0.4 cycles per quarter). The stationarity of the logged growth series is evident in these more uniform periodograms, which justifies our decision to apply log‐differencing before VAR estimation. Consequently, using log (CPI) and log (GDP) growth rates both removes spurious trend effects and isolates the genuine cyclical dynamics we wish to analyze.
+
+\begin{solution}{4}
+	\begin{enumerate}
+		\item 
+		We have 
+		\[
+		s_t = \alpha + s_{t-1} + e_t,
+		\quad
+		\mathcal F_t=\sigma(s_j\colon j\le t).
+		\]
+		In a random walk with drift we assume:
+		\[\bbE[e_{t+1}|\mathcal{F}_t] = 0\]
+%		If $\{e_t\}$ is a MDF, then by definition it's true that:
+%		\[\bbE[e_{t+1}|\mathcal{F}_t] = 0, \quad
+%		\bbE[e_{t}|\mathcal{F}_t] = e_t\]
+		Then we get:
+		\[
+		\bbE[s_{t+1}\mid\mathcal F_t]
+		= \bbE[\alpha + s_t + e_{t+1}\mid\mathcal{F}_t]
+		= \alpha + s_t + \underbrace{\bbE[e_{t+1}\mid\mathcal{F}_t]}_{=0}
+		= \alpha + s_t,
+		\]
+		Thus we obtain: 
+		\(\bbE[s_{t+1}\mid\mathcal F_t]-s_t=\alpha\neq0\).  \\
+		By assumption \(\{e_t\}\) satisfies \(\bbE[e_t|\mathcal{F}_{t-1}]=0\), hence it is a martingale‐difference sequence.
+		
+		\item 
+		Under the DGP implied by the model,
+		\(\Delta s_t := s_t - s_{t-1} = \alpha + e_t\),
+		with $e_t \overset{\mathrm{iid}}{\sim} N(0,\sigma_e^2)$ and \(s_0=0\).  
+		
+		One possible test can be constructed as the following regression:
+		\[
+		\Delta s_t = \alpha + e_t,
+		\quad t=1,\dots,T,
+		\]
+		Here \(H_0\colon\alpha=0\).  The OLS estimator is then given by:
+		\[
+		\hat\alpha
+		= \frac1T\sum_{t=1}^T\Delta s_t,
+		\]
+		By the CLT:
+		\[
+		\sqrt T\,(\hat\alpha-\alpha)
+		= \frac1{\sqrt T}\sum_{t=1}^T e_t
+		\;\xrightarrow{d}\;N(0,\sigma_e^2).
+		\]
+		Hence under \(H_0\) the expression above becomes:
+		\[\sqrt T\,\hat\alpha\xrightarrow{d} N(0,\sigma_e^2)\]
+		Then the \(t\)-statistic is given by:
+		\[
+		t_{\hat\alpha}
+		= \frac{\hat\alpha}{\hat\sigma_e/\sqrt T}
+		\;\xrightarrow{d}\;N(0,1).
+		\]
+	\end{enumerate}
+\end{solution}
+
+
+\section{The Welfare Loss Function for Optimal Monetary Policy}
+
+In this exercise, you will derive the welfare loss function that a Ramsey planner considers when choosing the optimal levels of inflation and output gap. You will proceed in steps. First you will prepare all the necessary ingredients, then you will dive into the derivations.
+
+To fix notation, the following convention is adopted. Uppercase letters indexed by time (e.g., \(C_t\)) denote variables in levels. Uppercase letters with no time index (e.g., \(C\)) denote variables in levels at their steady‐state value. Lowercase and hatted letters indexed by time (e.g., \(\hat c_t\)) denote the log deviation of a variable from its steady‐state value. Bold lowercase letters (e.g., \(\mathbf{a}\)) denote coefficients to be determined.
+
+Consider a standard New–Keynesian environment. The representative household has the following period utility function:
+\begin{equation}\label{eq:utility}
+U_t \;\equiv\; U(C_t, N_t)
+\;=\;
+\frac{C_t^{1-\gamma}}{1-\gamma}
+\;-\;
+\frac{N_t^{1+\varphi}}{1+\varphi}\,,
+\end{equation}
+where \(C_t\) is a composite consumption bundle made of varieties \(C_t\equiv\{C_t(i)\}_{i\in[0,1]}\). The rest of the model is the same as the one you used in Problem Set 1. In detail, the elasticity of substitution across varieties is \(\varepsilon\). Each of these firms \(i\in[0,1]\) can only set prices according to a Calvo lottery. With probability \(\theta\) firm \(i\) cannot reset prices in period \(t\). The variable \(\mathcal{D}_t\ge1\) measures price dispersion and equals 1 when all firms set the same price.
+
+Given this type of price rigidity, it can be shown that (see Galí (2015)):
+\begin{equation}\label{eq:dispersion}
+\hat d_t \;\simeq\; \frac{\varepsilon}{\omega\lambda}\,\pi_t^2\,,
+\end{equation}
+where
+\[
+\lambda \;\equiv\;\frac{(1 - \beta\theta)(1-\theta)}{\theta}
+\]
+is the slope of the aggregate supply curve. Note that \(\hat d_t\) depends on squared inflation and therefore is negligible up to first order. This means that, to second order, \(\hat d_t^2\) is negligible.
+
+Given their market power, intermediate‐good producers hire labor at a markdown. The government sets a subsidy to wages such that, in equilibrium, the marginal rate of substitution between leisure and consumption equals productivity. That is,
+\begin{equation}\label{eq:MRS}
+-\frac{U_n}{U_c} \;=\; A\,,
+\end{equation}
+where \(U_k\) denotes the partial derivative of \(U\) with respect to variable \(k\).
+
+
+\end{document}
+
