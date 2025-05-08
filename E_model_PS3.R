@@ -1,4 +1,5 @@
 rm(list = ls()) # Clear workspace
+options(scipen = 0) # Disable scientific notation
 library(KFAS) # for Gaussian state-space models in R
 library(vars) # VAR estimation and IRF
 library(tseries) # For unit root tests (adf.test)
@@ -14,9 +15,10 @@ data <- read.csv(paste(data_path, collapse = ""), stringsAsFactors = FALSE)
 
 # Convert the Quarter column from "2022Q1" format to Date type by replacing the
 # quarter with the corresponding start month.
-data$Quarter <- as.Date(paste0(substr(data$Quarter, 1, 4), "-", (as.numeric(
-  substr(data$Quarter, 6, 6)
-) - 1) * 3 + 1, "-01"))
+data$Quarter <- as.Date(paste0(
+  substr(data$Quarter, 1, 4), "-",
+  (as.numeric(substr(data$Quarter, 6, 6)) - 1) * 3 + 1, "-01"
+))
 # Assuming quarterly frequency (adjust start accordingly)
 start_year <- as.numeric(format(min(data$Quarter), "%Y"))
 start_quarter <- as.numeric(format(min(data$Quarter), "%m")) / 3 + 1
@@ -62,7 +64,7 @@ Zt <- cbind(
   inflation_ts # π_t
 )
 
-state_names <- c("beta_0", "beta_R_policy", "beta_y_gdp", "beta_pi_inflation")
+state_names <- c("beta_0", "beta_R_lagged_policy", "beta_y_gdp", "beta_pi_inflation")
 # 2. Build the SSModel
 mod_tvp <- SSModel(
   policy_ts ~ -1 + SSMcustom(
