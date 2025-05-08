@@ -430,13 +430,6 @@ horizon_IRF <- function(h, y, shock) {
   y_h <- y[(h + 1):n]
   shock_h <- shock[1:(n - h)]
 
-  # controls = NULL
-  # if (!is.null(controls)) {
-  #   controls_h <- controls[1:(n - h), ]
-  #   data_reg <- data.frame(y = y_h, shock = shock_h, controls_h)
-  # } else {
-  #   data_reg <- data.frame(y = y_h, shock = shock_h)
-  # }
   data_reg <- data.frame(y = unname(y_h), shock = unname(shock_h))
   # Run regression:
   model <- lm(y ~ shock, data = data_reg)
