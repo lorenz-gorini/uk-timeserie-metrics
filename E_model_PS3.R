@@ -313,25 +313,31 @@ print(outliers_xtable,
 # ========================
 # 7. Time-constant coefficients with Taylor rule
 # ========================
-# Combine into a data frame, dropping the first observation (NA from lag)
-df <- na.omit(data.frame(
-  R     = as.numeric(policy_ts),
-  R_lag = as.numeric(lagged_policy_ts), # R_{t-1}
-  y     = as.numeric(dgdp_ts), # y_t
-  pi    = as.numeric(inflation_ts), # π_t
+# Combine the transformed series into one multivariate time series.
+# Intersect the ts objects on their common time window
+aligned_ts <- ts.intersect(
+  R     = policy_ts, # R_t
+  R_lag = stats::lag(policy_ts, -1), # R_{t-1} one‐period lag of policy rate
+  y     = dgdp_ts, # y_t
+  pi    = inflation_ts, # π_t
   time  = time(policy_ts) # for reference
-))
+)
+# Drop any remaining NAs (if lag at the very first obs introduced NA)
+df_ols <- na.omit(as.data.frame(aligned_ts))
+
+# Inspect the first few rows
+head(df_ols)
 
 # Estimate the constant‐coefficient Taylor rule
 # NOTE: The function lm() already includes an intercept term by default.
 # The model is: R_t = β_0 + β_R * R_{t-1} + β_y * y_t + β_π * π_t + ε_t
-model_const <- lm(R ~ R_lag + y + pi, data = df)
+model_const <- lm(R ~ R_lag + y + pi, data = df_ols)
 
 # 4. Summarize results
 summary(model_const)
 
 summary_coef <- coef(summary(model_const))
-coefs_df <- data.frame(
+coefs_ols <- data.frame(
   Parameter = rownames(summary_coef),
   Estimate = summary_coef[, "Estimate"],
   Std_Error = summary_coef[, "Std. Error"],
@@ -343,13 +349,10 @@ library(xtable)
 options(scipen = -999) # Force output in scientific/exponential notation
 
 coef_table <- xtable(
-  coefs_df,
+  coefs_ols,
   caption = "Constant-coefficient Taylor Rule Model Coefficients",
   label = "tab:const_coeff",
   digits = c(0, -2, -2, -2, -2, -2)
 )
 
-print(coef_table,
-  include.rownames = FALSE
-  # format.args = list(scientific = TRUE)
-)
+print(coef_table, include.rownames = FALSE)
